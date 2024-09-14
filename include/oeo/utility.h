@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
@@ -268,22 +269,20 @@ template <size_t N, class Fn>
 constexpr void unroll(Fn&& fn) {
     [&]<size_t... I>(std::index_sequence<I...>) {
         (void(std::forward<Fn>(fn)(I)), ...);
-    }(std::index_sequence_for<Ts...>());
+    }(std::make_index_sequence<N>());
 }
 
 template <size_t N, class Fn, class... Args>
 constexpr decltype(auto) visit_index(size_t index, Fn&& fn, Args&&... args) {
-    constexpr int strategy = N == 1 ? 0 : N <= 4 ? 1 : N <= 16 ? 2 : N <= 64 ? 3 : N <= 256 ? 4 : -1;
-    using Impl             = typename visit_strategy<N, strategy>;
-    using Ret              = decltype((std::declval<Fn>().template operator()<0>(std::declval<Args>()...)));
-    return (Impl::template invoke<Ret>(index, std::forward<Fn>(fn), std::forward<Args>(args)...));
+    constexpr int s = N == 1 ? 0 : N <= 4 ? 1 : N <= 16 ? 2 : N <= 64 ? 3 : N <= 256 ? 4 : -1;
+    using Ret       = decltype((std::declval<Fn>().template operator()<0>(std::declval<Args>()...)));
+    return (visit_strategy<N, s>::template invoke<Ret>(index, std::forward<Fn>(fn), std::forward<Args>(args)...));
 }
 
 template <class Ret, size_t N, class Fn, class... Args>
 constexpr Ret visit_index(size_t index, Fn&& fn, Args&&... args) {
-    constexpr int strategy = N == 1 ? 0 : N <= 4 ? 1 : N <= 16 ? 2 : N <= 64 ? 3 : N <= 256 ? 4 : -1;
-    using Impl             = typename visit_strategy<N, strategy>;
-    return Impl::template invoke<Ret>(index, std::forward<Fn>(fn), std::forward<Args>(args)...);
+    constexpr int s = N == 1 ? 0 : N <= 4 ? 1 : N <= 16 ? 2 : N <= 64 ? 3 : N <= 256 ? 4 : -1;
+    return visit_strategy<N, s>::template invoke<Ret>(index, std::forward<Fn>(fn), std::forward<Args>(args)...);
 }
 
 template <class... Ts>
