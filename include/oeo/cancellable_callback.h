@@ -15,7 +15,7 @@ public:
 
     bool cancel() { return available.exchange(false); }
 
-    void try_call() {
+    bool try_call() {
         if (available.exchange(false)) {
             callback();
             return true;
